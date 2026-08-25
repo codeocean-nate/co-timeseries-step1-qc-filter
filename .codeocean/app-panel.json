@@ -1,0 +1,51 @@
+{
+  "named_parameters": true,
+  "general": {
+    "title": "QC filter options",
+    "instructions": "Every field is optional — the defaults are a sensible QC pass for the instrument demo data. Each reading gets exactly one reason, applied in this order: dropped instrument, low coverage, out of range, flatline, spike, ok. A value that cannot be read logs a warning and skips that one rule; the run always finishes."
+  },
+  "parameters": [
+    {
+      "name": "Minimum valid reading",
+      "type": "text",
+      "param_name": "min_reading",
+      "description": "Readings below this value are flagged out_of_range. Blank means no lower bound.",
+      "default_value": "-20"
+    },
+    {
+      "name": "Maximum valid reading",
+      "type": "text",
+      "param_name": "max_reading",
+      "description": "Readings above this value are flagged out_of_range. Blank means no upper bound.",
+      "default_value": "120"
+    },
+    {
+      "name": "Spike threshold (MAD multiples)",
+      "type": "text",
+      "param_name": "spike_mad",
+      "description": "Robust z = 0.6745*(x-median)/MAD, computed per instrument after out-of-range rows are removed. Readings above this many MAD multiples are flagged spike. 0 disables the rule.",
+      "default_value": "6"
+    },
+    {
+      "name": "Flatline run length",
+      "type": "text",
+      "param_name": "flatline_run",
+      "description": "A run of this many identical consecutive readings from one instrument is a stuck sensor; the whole run is flagged flatline. Must be 2 or more.",
+      "default_value": "12"
+    },
+    {
+      "name": "Minimum instrument coverage %",
+      "type": "text",
+      "param_name": "min_coverage_pct",
+      "description": "Coverage is observed readings divided by the expected hourly slots between an instrument's first and last timestamp. Instruments below this percentage are dropped entirely. Must be between 0 and 100.",
+      "default_value": "50"
+    },
+    {
+      "name": "Drop instruments",
+      "type": "text",
+      "param_name": "drop_instruments",
+      "description": "Comma-separated instrument ids to force-drop regardless of their data quality, e.g. RX-102, RX-103. Blank keeps every instrument.",
+      "default_value": ""
+    }
+  ]
+}

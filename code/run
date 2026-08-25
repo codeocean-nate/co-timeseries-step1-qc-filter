@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Code Ocean capsule entrypoint (time-series step 1: QC filter).
+#
+# CO conventions: this script runs from the capsule root; input data assets
+# are mounted READ-ONLY under /data, and anything written to /results is
+# captured as the run's output (and can become the next step's input asset).
+# Progress printed to stdout shows up in the Code Ocean run log.
+set -euo pipefail
+
+echo "[qc] entrypoint starting (raw readings -> QC-filtered readings)"
+
+# Code Ocean appends App Panel parameter values to this script as command-line
+# arguments. With "named_parameters": true each one arrives as a SINGLE token
+# of the form --param_name=value (equals sign, not a space), so the only
+# correct thing to do is forward "$@" verbatim and let argparse in Python
+# handle it. exec replaces this shell with python3, so python's exit code is
+# the capsule's exit code (qc_filter.py prints its own "done" line).
+exec python3 "$(dirname "$0")/qc_filter.py" "$@"
