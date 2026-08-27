@@ -388,9 +388,7 @@ Instrument ids match case-insensitively, and the list is split on commas only �
 
 - **No parameters ⇒ a sensible QC pass.** A plain Reproducible Run supplies nothing at all,
   so the defaults must be a demo-quality QC pass on their own. (The run log says
-  `no run parameters supplied — using the App Panel defaults` in that case; the wording is
-  the script's own and predates the finding above — it means *this capsule's built-in
-  defaults*, and no panel is involved.)
+  `no run parameters supplied — using this capsule's own defaults` in that case.)
 - **A bad value never fails the run.** It logs a warning, skips *that one rule*, and exits
   0: `--min_reading=abc` drops the lower bound, `--spike_mad=-1` turns spike detection off,
   `--flatline_run=0` turns the flatline rule off, `--min_coverage_pct=999` (outside 0–100)
