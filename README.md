@@ -334,18 +334,43 @@ reading, still written to `clean_readings.csv` and `qc_flags.csv` with its origi
 timestamp text, and still counted in `qc_summary.csv`; the instrument is still reported.
 Bad data is data.
 
-## Run parameters (App Panel)
+## Run parameters
 
-`.codeocean/app-panel.json` is what makes this capsule parameterizable. Code Ocean reads
-that committed file and materializes an App Panel form — no UI work required — and the
-file is read-only in the capsule IDE, so it can only arrive by `git push`. Because the
-panel sets `"named_parameters": true`, each value is appended to `code/run` as a single
-command-line argument shaped `--param_name=value` (equals sign, not a space); `code/run`
-forwards `"$@"` and `qc_filter.py` parses it with `argparse`. Values chosen this way are
-recorded on the computation and frozen onto the captured result asset as `app_parameters`,
-which is why the orchestrator app routes the user's choices through parameters instead of
-keeping them to itself. Adding a parameter here makes it appear in the orchestrator's GUI
-automatically — the app renders the panel it reads back from the capsule.
+Every parameter below is a **named run parameter**. A caller — the orchestrator app, the
+`codeocean` SDK, or the REST API — supplies `param_name=value` when it starts the run, and
+Code Ocean appends each one to `code/run` as a single command-line argument shaped
+`--param_name=value` (equals sign, not a space); `code/run` forwards `"$@"` and
+`qc_filter.py` parses it with `argparse`. Values chosen this way are recorded on the
+computation and frozen onto the captured result asset as `app_parameters`, which is why the
+orchestrator app routes the user's choices through run parameters instead of keeping them
+to itself.
+
+**No App Panel is required for this, and this capsule does not ship one.** Named run
+parameters were measured reaching a capsule with no panel at all: the capsule's own
+`manifest.json` recorded the argv it actually received, and the outputs changed
+accordingly. The parameter names, defaults and argv shape documented here are the whole
+contract.
+
+> ### Why there is no `.codeocean/app-panel.json` in this repo
+>
+> Measured live on a Code Ocean deployment, 2026-08-26. Committing that file does **not**
+> create an App Panel: a capsule imported from a repo containing it still shows *Create
+> App* in the App Builder and a plain **Reproducible Run** button, and committing, pushing
+> to the capsule's git remote and reopening the capsule all failed to materialize a panel.
+>
+> Worse, the file **bricks the capsule**. Every run request against a capsule containing it
+> came back:
+>
+> ```
+> 403 {"message":"corrupted object files","corrupted_object_files":[".codeocean/app-panel.json"]}
+> ```
+>
+> Five out of five: three capsules carrying the file all 403'd, two without it ran fine, and
+> deleting the file made the bricked ones runnable again. So the file is not shipped here,
+> and nothing in this demo depends on a panel existing.
+>
+> If you *want* a panel in the Code Ocean UI, build it in the **App Builder** (or via Aqua)
+> and let Code Ocean write the file itself. Never add one to a repo you clone from.
 
 | Argument | Label | Default | Meaning |
 |---|---|---|---|
@@ -361,8 +386,11 @@ Instrument ids match case-insensitively, and the list is split on commas only �
 
 ### The never-fail rules
 
-- **No parameters ⇒ a sensible QC pass.** The panel may not exist on every deployment, so
-  the demo must never depend on it.
+- **No parameters ⇒ a sensible QC pass.** A plain Reproducible Run supplies nothing at all,
+  so the defaults must be a demo-quality QC pass on their own. (The run log says
+  `no run parameters supplied — using the App Panel defaults` in that case; the wording is
+  the script's own and predates the finding above — it means *this capsule's built-in
+  defaults*, and no panel is involved.)
 - **A bad value never fails the run.** It logs a warning, skips *that one rule*, and exits
   0: `--min_reading=abc` drops the lower bound, `--spike_mad=-1` turns spike detection off,
   `--flatline_run=0` turns the flatline rule off, `--min_coverage_pct=999` (outside 0–100)
@@ -378,7 +406,7 @@ Instrument ids match case-insensitively, and the list is split on commas only �
   100000, again with a warning.
 - **A skipped rule always says so.** Every `null` in `effective_parameters` has a matching
   entry in `parameter_warnings` (a value that was rejected) or in `notes` — `--spike_mad=0`,
-  the panel's documented off-switch, and `--min_reading=` and friends, where a blank
+  this capsule's documented off-switch, and `--min_reading=` and friends, where a blank
   deliberately turns a rule off. Nothing was rejected in those two cases, so they are not
   warnings, but the resulting `null` still owes the reader an explanation. A rule that goes
   quiet with no explanation anywhere is a contract violation, not merely untidy.
@@ -389,8 +417,9 @@ Instrument ids match case-insensitively, and the list is split on commas only �
   `--flatline_run=2.9` is used as `2`, and says so: *"Flatline run length "2.9" is not a
   whole number — the fractional part was discarded and 2 was used."* Every other coercion
   in this capsule emits a message, so a silent one is the one an operator would miss.
-- **An unknown parameter is ignored, not fatal.** A stale App Panel that sends
-  `--not_a_param=x` logs a warning and the run continues; the token is listed in
+- **An unknown parameter is ignored, not fatal.** A caller that sends `--not_a_param=x` —
+  an app built against a newer parameter list, or a hand-typed run — logs a warning and the
+  run continues; the token is listed in
   `parameters_source.ignored_tokens` and named in a `parameter_warnings` entry.
 - **A token the run could not use never becomes a silent lie.** There are two ways a token
   ends up unused, and both are handled the same way:
