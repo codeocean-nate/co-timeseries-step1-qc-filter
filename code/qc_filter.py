@@ -21,10 +21,12 @@ replaces ``/results``.
 
 Run parameters (the human-in-the-loop part of the demo):
 
-* The capsule ships an App Panel (``.codeocean/app-panel.json``, committed to
-  the capsule's git repo). Code Ocean turns that file into a form and appends
-  whatever the user typed to ``code/run`` as command-line ARGUMENTS — not env
-  vars. With ``"named_parameters": true`` each value arrives as one argv token
+* This capsule has NO App Panel and does not need one. **Never add a
+  ``.codeocean/app-panel.json``**: that file does not create a panel, and its
+  presence makes every run of the capsule fail with ``403 corrupted object
+  files``. The orchestrator app declares these parameters itself and sends them
+  as *named run parameters*, which Code Ocean appends to ``code/run`` as
+  command-line ARGUMENTS — not env vars. Each value arrives as one argv token
   shaped ``--param_name=value`` (equals sign, not a space), which ``argparse``
   parses natively.
 * Routing the GUI's choices through Code Ocean parameters (instead of keeping
@@ -214,10 +216,12 @@ def log(msg):
 
 
 # ---------------------------------------------------------------------------
-# Run parameters (Code Ocean App Panel)
+# Run parameters (Code Ocean named run parameters)
 # ---------------------------------------------------------------------------
-# One entry per parameter in .codeocean/app-panel.json. Keep the two in sync:
-# the panel defines the FORM, this table defines how the capsule reads it.
+# This table is the source of truth for what the capsule ACCEPTS. There is no
+# App Panel to keep in sync — and there must never be one, see the module
+# docstring. The orchestrator app mirrors these names and defaults in its own
+# form.
 #   (param_name / argument key, label shown on the panel, default)
 PARAM_SPECS = [
     ("min_reading", "Minimum valid reading", "-20"),
@@ -2028,7 +2032,7 @@ def main(argv=None):
         log("no usable run parameters in the argument list — using the App "
             "Panel defaults")
     else:
-        log("no run parameters supplied — using the App Panel defaults")
+        log("no run parameters supplied — using this capsule's own defaults")
     for param_name, label, _default in PARAM_SPECS:
         value = params[param_name]
         log("  {:<18} = {:<12} ({})".format(
